@@ -3,7 +3,9 @@
 import { useState, useRef, useEffect } from "react";
 
 export default function Home() {
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [isClient, setIsClient] = useState(false);
+  const [images, setImages] = useState<string[]>([]);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [contrast, setContrast] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -17,50 +19,13 @@ export default function Home() {
   const lastUpdateTimeRef = useRef<number>(0);
   const imageRef = useRef<HTMLImageElement>(null);
   const magnifierRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setSelectedImage(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
+  const selectedImage = images.length > 0 ? images[currentImageIndex] : null;
 
-  const toggleAnimation = () => {
-    setIsAnimating(!isAnimating);
-    setIsPaused(false);
-  };
-
-  const togglePause = () => {
-    setIsPaused(!isPaused);
-  };
-
-  const toggleExpanded = () => {
-    setIsExpanded(!isExpanded);
-  };
-
-  const toggleToolbar = () => {
-    setIsToolbarVisible(!isToolbarVisible);
-  };
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!isMagnifierActive || !imageRef.current) return;
-
-    const rect = imageRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-
-    if (x >= 0 && x <= rect.width && y >= 0 && y <= rect.height) {
-      setMagnifierPosition({ x, y });
-    }
-  };
-
-  const toggleMagnifier = () => {
-    setIsMagnifierActive(!isMagnifierActive);
-  };
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   useEffect(() => {
     if (isAnimating && !isPaused) {
@@ -101,6 +66,156 @@ export default function Home() {
     };
   }, [isAnimating, isPaused, speed]);
 
+  // Ensure currentImageIndex is always valid
+  useEffect(() => {
+    if (images.length === 0) {
+      setCurrentImageIndex(0);
+    } else if (currentImageIndex >= images.length) {
+      setCurrentImageIndex(0);
+    }
+  }, [images.length, currentImageIndex]);
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!isExpanded || images.length <= 1) return;
+
+      switch (e.key) {
+        case 'ArrowLeft':
+          e.preventDefault();
+          previousImage();
+          break;
+        case 'ArrowRight':
+          e.preventDefault();
+          nextImage();
+          break;
+        case 'Escape':
+          e.preventDefault();
+          toggleExpanded();
+          break;
+      }
+    };
+
+    if (isExpanded) {
+      document.addEventListener('keydown', handleKeyDown);
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isExpanded, images.length]);
+
+  if (!isClient) {
+    return (
+      <div className="min-h-screen p-8 bg-gray-50 dark:bg-gray-900 flex flex-col">
+        <div className="max-w-4xl mx-auto flex-grow">
+          <h1 className="text-3xl font-bold mb-8 text-center text-gray-800 dark:text-white">
+            Image Contrast Animator
+          </h1>
+          <div className="text-center text-gray-600 dark:text-gray-400">
+            Loading...
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files) {
+      const fileArray = Array.from(files);
+      const imageFiles = fileArray.filter(file => file.type.startsWith('image/'));
+      
+      if (imageFiles.length === 0) {
+        alert('Please select at least one image file.');
+        return;
+      }
+
+      const readers = imageFiles.map(file => {
+        return new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            resolve(e.target?.result as string);
+          };
+          reader.readAsDataURL(file);
+        });
+      });
+
+      Promise.all(readers).then((imageUrls) => {
+        setImages(imageUrls);
+        setCurrentImageIndex(0);
+        // Reset animation when new images are loaded
+        setIsAnimating(false);
+        setIsPaused(false);
+        setContrast(0);
+      });
+    }
+  };
+
+  const nextImage = () => {
+    if (images.length > 0) {
+      setCurrentImageIndex((prev) => (prev + 1) % images.length);
+    }
+  };
+
+  const previousImage = () => {
+    if (images.length > 0) {
+      setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
+    }
+  };
+
+  const selectImage = (index: number) => {
+    if (index >= 0 && index < images.length) {
+      setCurrentImageIndex(index);
+    }
+  };
+
+  const clearImages = () => {
+    setImages([]);
+    setCurrentImageIndex(0);
+    setIsAnimating(false);
+    setIsPaused(false);
+    setContrast(0);
+    setIsMagnifierActive(false);
+    setMagnifierPosition({ x: 0, y: 0 });
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const toggleAnimation = () => {
+    setIsAnimating(!isAnimating);
+    setIsPaused(false);
+  };
+
+  const togglePause = () => {
+    setIsPaused(!isPaused);
+  };
+
+  const toggleExpanded = () => {
+    setIsExpanded(!isExpanded);
+  };
+
+  const toggleToolbar = () => {
+    setIsToolbarVisible(!isToolbarVisible);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isMagnifierActive || !imageRef.current) return;
+
+    const rect = imageRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    if (x >= 0 && x <= rect.width && y >= 0 && y <= rect.height) {
+      setMagnifierPosition({ x, y });
+    }
+  };
+
+  const toggleMagnifier = () => {
+    setIsMagnifierActive(!isMagnifierActive);
+  };
+
   return (
     <div className="min-h-screen p-8 bg-gray-50 dark:bg-gray-900 flex flex-col">
       <div className="max-w-4xl mx-auto flex-grow">
@@ -116,9 +231,10 @@ export default function Home() {
             {/* Image Upload */}
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Upload Image
+                Upload Images (Multiple)
               </label>
               <input
+                ref={fileInputRef}
                 type="file"
                 accept="image/*"
                 onChange={handleImageUpload}
@@ -129,8 +245,54 @@ export default function Home() {
                   file:bg-blue-50 file:text-blue-700
                   hover:file:bg-blue-100
                   dark:file:bg-blue-900 dark:file:text-blue-300"
+                multiple
               />
+              {images.length > 0 && (
+                <div className="mt-2 flex items-center justify-between">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                    {images.length} image{images.length !== 1 ? 's' : ''} loaded
+                  </span>
+                  <button
+                    onClick={clearImages}
+                    className="text-sm text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
+                  >
+                    Clear All
+                  </button>
+                </div>
+              )}
             </div>
+
+            {/* Image Navigation */}
+            {images.length > 1 && (
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Image Navigation
+                </label>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={previousImage}
+                    className="p-2 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                    disabled={images.length <= 1}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+                  <span className="flex-1 text-center text-sm text-gray-600 dark:text-gray-400">
+                    {currentImageIndex + 1} of {images.length}
+                  </span>
+                  <button
+                    onClick={nextImage}
+                    className="p-2 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                    disabled={images.length <= 1}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Contrast Control */}
             <div className="mb-6">
@@ -201,44 +363,73 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Image Preview */}
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold text-gray-800 dark:text-white">Preview</h2>
-              {selectedImage && (
-                <button
-                  onClick={toggleExpanded}
-                  className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white transition-colors"
-                  title={isExpanded ? "Exit expanded view" : "Enter expanded view"}
-                >
-                  {isExpanded ? (
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M5 4a1 1 0 00-1 1v4a1 1 0 01-2 0V5a3 3 0 013-3h4a1 1 0 010 2H5zm10 0a1 1 0 100 2h4a1 1 0 011 1v4a1 1 0 102 0V5a3 3 0 00-3-3h-4zM5 14a1 1 0 011-1h4a1 1 0 110 2H6a1 1 0 01-1-1zm10 0a1 1 0 100 2h4a1 1 0 001-1v-4a1 1 0 10-2 0v4a1 1 0 01-1 1h-4z" clipRule="evenodd" />
-                    </svg>
-                  ) : (
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M3 4a1 1 0 011-1h4a1 1 0 010 2H6.414l2.293 2.293a1 1 0 11-1.414 1.414L5 6.414V8a1 1 0 01-2 0V4zm9 1a1 1 0 010-2h4a1 1 0 011 1v4a1 1 0 01-2 0V6.414l-2.293 2.293a1 1 0 11-1.414-1.414L13.586 5H12zm-9 7a1 1 0 012 0v1.586l2.293-2.293a1 1 0 111.414 1.414L6.414 15H8a1 1 0 010 2H4a1 1 0 01-1-1v-4zm13-1a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 010-2h1.586l-2.293-2.293a1 1 0 111.414-1.414L15 13.586V12a1 1 0 011-1z" clipRule="evenodd" />
-                    </svg>
-                  )}
-                </button>
-              )}
-            </div>
-            <div className="relative aspect-square w-full bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
-              {selectedImage ? (
-                <img
-                  ref={imageRef}
-                  src={selectedImage}
-                  alt="Preview"
-                  className="w-full h-full object-contain"
-                  style={{ filter: `contrast(${contrast + 100}%)` }}
-                />
-              ) : (
-                <div className="absolute inset-0 flex items-center justify-center text-gray-400 dark:text-gray-500">
-                  No image selected
+                      {/* Image Preview */}
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold text-gray-800 dark:text-white">Preview</h2>
+                {selectedImage && (
+                  <button
+                    onClick={toggleExpanded}
+                    className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white transition-colors"
+                    title={isExpanded ? "Exit expanded view" : "Enter expanded view"}
+                  >
+                    {isExpanded ? (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M5 4a1 1 0 00-1 1v4a1 1 0 01-2 0V5a3 3 0 013-3h4a1 1 0 010 2H5zm10 0a1 1 0 100 2h4a1 1 0 011 1v4a1 1 0 102 0V5a3 3 0 00-3-3h-4zM5 14a1 1 0 011-1h4a1 1 0 110 2H6a1 1 0 01-1-1zm10 0a1 1 0 100 2h4a1 1 0 001-1v-4a1 1 0 10-2 0v4a1 1 0 01-1 1h-4z" clipRule="evenodd" />
+                      </svg>
+                    ) : (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M3 4a1 1 0 011-1h4a1 1 0 010 2H6.414l2.293 2.293a1 1 0 11-1.414 1.414L5 6.414V8a1 1 0 01-2 0V4zm9 1a1 1 0 010-2h4a1 1 0 011 1v4a1 1 0 01-2 0V6.414l-2.293 2.293a1 1 0 11-1.414-1.414L13.586 5H12zm-9 7a1 1 0 012 0v1.586l2.293-2.293a1 1 0 111.414 1.414L6.414 15H8a1 1 0 010 2H4a1 1 0 01-1-1v-4zm13-1a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 010-2h1.586l-2.293-2.293a1 1 0 111.414-1.414L15 13.586V12a1 1 0 011-1z" clipRule="evenodd" />
+                      </svg>
+                    )}
+                  </button>
+                )}
+              </div>
+              <div className="relative aspect-square w-full bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+                {selectedImage ? (
+                  <img
+                    ref={imageRef}
+                    src={selectedImage}
+                    alt="Preview"
+                    className="w-full h-full object-contain"
+                    style={{ filter: `contrast(${contrast + 100}%)` }}
+                  />
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center text-gray-400 dark:text-gray-500">
+                    No image selected
+                  </div>
+                )}
+              </div>
+
+              {/* Thumbnail Gallery */}
+              {images.length > 1 && (
+                <div className="mt-4">
+                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Image Gallery</h3>
+                  <div className="grid grid-cols-4 gap-2 max-h-32 overflow-y-auto">
+                    {images.map((image, index) => (
+                      <button
+                        key={index}
+                        onClick={() => selectImage(index)}
+                        className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${
+                          index === currentImageIndex
+                            ? 'border-blue-500 ring-2 ring-blue-200 dark:ring-blue-800'
+                            : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
+                        }`}
+                      >
+                        <img
+                          src={image}
+                          alt={`Thumbnail ${index + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs px-1 py-0.5 text-center">
+                          {index + 1}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
-          </div>
         </div>
       </div>
 
@@ -291,6 +482,30 @@ export default function Home() {
             onMouseMove={handleMouseMove}
             onMouseLeave={() => setMagnifierPosition({ x: 0, y: 0 })}
           >
+            {/* Navigation Arrows */}
+            {images.length > 1 && (
+              <>
+                <button
+                  onClick={previousImage}
+                  className="absolute left-4 top-1/2 transform -translate-y-1/2 p-3 bg-black/50 text-white rounded-full hover:bg-black/70 transition-colors z-10"
+                  title="Previous image (←)"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+                <button
+                  onClick={nextImage}
+                  className="absolute right-4 top-1/2 transform -translate-y-1/2 p-3 bg-black/50 text-white rounded-full hover:bg-black/70 transition-colors z-10"
+                  title="Next image (→)"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </>
+            )}
+
             <img
               ref={imageRef}
               src={selectedImage}
@@ -320,6 +535,13 @@ export default function Home() {
                     filter: `contrast(${contrast + 100}%)`
                   }}
                 />
+              </div>
+            )}
+
+            {/* Image Counter */}
+            {images.length > 1 && (
+              <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-black/50 text-white px-4 py-2 rounded-full text-sm">
+                {currentImageIndex + 1} of {images.length}
               </div>
             )}
           </div>
