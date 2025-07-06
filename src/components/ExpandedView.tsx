@@ -4,8 +4,8 @@ interface ExpandedViewProps {
   selectedImage: string | null;
   images: string[];
   currentImageIndex: number;
-  imageRef: React.RefObject<HTMLImageElement>;
-  magnifierRef: React.RefObject<HTMLDivElement>;
+  imageRef: React.RefObject<HTMLImageElement | null>;
+  magnifierRef: React.RefObject<HTMLDivElement | null>;
   contrast: number;
   isExpanded: boolean;
   isToolbarVisible: boolean;

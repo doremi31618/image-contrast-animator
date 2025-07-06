@@ -4,9 +4,10 @@ interface ImagePreviewProps {
   selectedImage: string | null;
   images: string[];
   currentImageIndex: number;
-  imageRef: React.RefObject<HTMLImageElement>;
+  imageRef: React.RefObject<HTMLImageElement | null>;
   contrast: number;
   selectImage: (index: number) => void;
+  onExpand: () => void;
 }
 
 const ImagePreview: React.FC<ImagePreviewProps> = ({
@@ -16,11 +17,23 @@ const ImagePreview: React.FC<ImagePreviewProps> = ({
   imageRef,
   contrast,
   selectImage,
+  onExpand,
 }) => {
   return (
     <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold text-gray-800 dark:text-white">Preview</h2>
+        {selectedImage && (
+          <button
+            onClick={onExpand}
+            className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white transition-colors"
+            title="Enter expanded view"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M3 4a1 1 0 011-1h4a1 1 0 010 2H6.414l2.293 2.293a1 1 0 11-1.414 1.414L5 6.414V8a1 1 0 01-2 0V4zm9 1a1 1 0 010-2h4a1 1 0 011 1v4a1 1 0 01-2 0V6.414l-2.293 2.293a1 1 0 11-1.414-1.414L13.586 5H12zm-9 7a1 1 0 012 0v1.586l2.293-2.293a1 1 0 111.414 1.414L6.414 15H8a1 1 0 010 2H4a1 1 0 01-1-1v-4zm13-1a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 010-2h1.586l-2.293-2.293a1 1 0 111.414-1.414L15 13.586V12a1 1 0 011-1z" clipRule="evenodd" />
+            </svg>
+          </button>
+        )}
       </div>
       <div className="relative aspect-square w-full bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
         {selectedImage ? (

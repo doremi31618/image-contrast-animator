@@ -16,7 +16,7 @@ interface SettingsPanelProps {
   setSpeed: (value: number) => void;
   toggleAnimation: () => void;
   togglePause: () => void;
-  fileInputRef: React.RefObject<HTMLInputElement>;
+  fileInputRef: React.RefObject<HTMLInputElement | null>;
 }
 
 const SettingsPanel: React.FC<SettingsPanelProps> = ({
