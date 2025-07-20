@@ -6,6 +6,7 @@ interface ImagePreviewProps {
   currentImageIndex: number;
   imageRef: React.RefObject<HTMLImageElement | null>;
   contrast: number;
+  exposure: number;
   selectImage: (index: number) => void;
   onExpand: () => void;
 }
@@ -16,6 +17,7 @@ const ImagePreview: React.FC<ImagePreviewProps> = ({
   currentImageIndex,
   imageRef,
   contrast,
+  exposure,
   selectImage,
   onExpand,
 }) => {
@@ -42,7 +44,7 @@ const ImagePreview: React.FC<ImagePreviewProps> = ({
             src={selectedImage}
             alt="Preview"
             className="w-full h-full object-contain"
-            style={{ filter: `contrast(${contrast + 100}%)` }}
+            style={{ filter: `contrast(${contrast + 100}%) brightness(${exposure + 100}%)` }}
           />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center text-gray-400 dark:text-gray-500">

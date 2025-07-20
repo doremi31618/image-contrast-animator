@@ -10,6 +10,7 @@ export default function Home() {
   const [images, setImages] = useState<string[]>([]);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [contrast, setContrast] = useState(0);
+  const [exposure, setExposure] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [speed, setSpeed] = useState(1);
@@ -179,6 +180,7 @@ export default function Home() {
     setIsAnimating(false);
     setIsPaused(false);
     setContrast(0);
+    setExposure(0);
     setIsMagnifierActive(false);
     setMagnifierPosition({ x: 0, y: 0 });
     if (fileInputRef.current) {
@@ -231,6 +233,7 @@ export default function Home() {
             images={images}
             currentImageIndex={currentImageIndex}
             contrast={contrast}
+            exposure={exposure}
             speed={speed}
             isAnimating={isAnimating}
             isPaused={isPaused}
@@ -240,6 +243,7 @@ export default function Home() {
             nextImage={nextImage}
             selectImage={selectImage}
             setContrast={setContrast}
+            setExposure={setExposure}
             setSpeed={setSpeed}
             toggleAnimation={toggleAnimation}
             togglePause={togglePause}
@@ -251,6 +255,7 @@ export default function Home() {
             currentImageIndex={currentImageIndex}
             imageRef={imageRef}
             contrast={contrast}
+            exposure={exposure}
             selectImage={selectImage}
             onExpand={toggleExpanded}
           />
@@ -263,6 +268,7 @@ export default function Home() {
         imageRef={imageRef}
         magnifierRef={magnifierRef}
         contrast={contrast}
+        exposure={exposure}
         isExpanded={isExpanded}
         isToolbarVisible={isToolbarVisible}
         isMagnifierActive={isMagnifierActive}
@@ -275,6 +281,7 @@ export default function Home() {
         speed={speed}
         setSpeed={setSpeed}
         setContrast={setContrast}
+        setExposure={setExposure}
         isAnimating={isAnimating}
         isPaused={isPaused}
         toggleAnimation={toggleAnimation}

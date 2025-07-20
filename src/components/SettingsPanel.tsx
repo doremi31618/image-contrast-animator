@@ -4,6 +4,7 @@ interface SettingsPanelProps {
   images: string[];
   currentImageIndex: number;
   contrast: number;
+  exposure: number;
   speed: number;
   isAnimating: boolean;
   isPaused: boolean;
@@ -13,6 +14,7 @@ interface SettingsPanelProps {
   nextImage: () => void;
   selectImage: (index: number) => void;
   setContrast: (value: number) => void;
+  setExposure: (value: number) => void;
   setSpeed: (value: number) => void;
   toggleAnimation: () => void;
   togglePause: () => void;
@@ -23,6 +25,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
   images,
   currentImageIndex,
   contrast,
+  exposure,
   speed,
   isAnimating,
   isPaused,
@@ -31,6 +34,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
   previousImage,
   nextImage,
   setContrast,
+  setExposure,
   setSpeed,
   toggleAnimation,
   togglePause,
@@ -114,6 +118,25 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
           max="100"
           value={contrast}
           onChange={(e) => setContrast(Number(e.target.value))}
+          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
+        />
+        <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
+          <span>-100%</span>
+          <span>0%</span>
+          <span>100%</span>
+        </div>
+      </div>
+      {/* Exposure Control */}
+      <div className="mb-6">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          Exposure: {exposure.toFixed(1)}%
+        </label>
+        <input
+          type="range"
+          min="-100"
+          max="100"
+          value={exposure}
+          onChange={(e) => setExposure(Number(e.target.value))}
           className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
         />
         <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">

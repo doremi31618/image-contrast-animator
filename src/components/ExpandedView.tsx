@@ -7,6 +7,7 @@ interface ExpandedViewProps {
   imageRef: React.RefObject<HTMLImageElement | null>;
   magnifierRef: React.RefObject<HTMLDivElement | null>;
   contrast: number;
+  exposure: number;
   isExpanded: boolean;
   isToolbarVisible: boolean;
   isMagnifierActive: boolean;
@@ -19,6 +20,7 @@ interface ExpandedViewProps {
   speed: number;
   setSpeed: (value: number) => void;
   setContrast: (value: number) => void;
+  setExposure: (value: number) => void;
   isAnimating: boolean;
   isPaused: boolean;
   toggleAnimation: () => void;
@@ -34,6 +36,7 @@ const ExpandedView: React.FC<ExpandedViewProps> = ({
   imageRef,
   magnifierRef,
   contrast,
+  exposure,
   isExpanded,
   isToolbarVisible,
   isMagnifierActive,
@@ -46,6 +49,7 @@ const ExpandedView: React.FC<ExpandedViewProps> = ({
   speed,
   setSpeed,
   setContrast,
+  setExposure,
   isAnimating,
   isPaused,
   toggleAnimation,
@@ -124,7 +128,7 @@ const ExpandedView: React.FC<ExpandedViewProps> = ({
           src={selectedImage}
           alt="Expanded Preview"
           className="max-w-full max-h-full object-contain"
-          style={{ filter: `contrast(${contrast + 100}%)` }}
+          style={{ filter: `contrast(${contrast + 100}%) brightness(${exposure + 100}%)` }}
         />
         {/* Magnifier */}
         {isMagnifierActive && magnifierPosition.x > 0 && magnifierPosition.y > 0 && (
@@ -144,7 +148,7 @@ const ExpandedView: React.FC<ExpandedViewProps> = ({
                 backgroundImage: `url(${selectedImage})`,
                 backgroundSize: `${imageRef.current?.width ? imageRef.current.width * 2 : 0}px ${imageRef.current?.height ? imageRef.current.height * 2 : 0}px`,
                 backgroundPosition: `-${magnifierPosition.x * 2 - 80}px -${magnifierPosition.y * 2 - 80}px`,
-                filter: `contrast(${contrast + 100}%)`
+                filter: `contrast(${contrast + 100}%) brightness(${exposure + 100}%)`
               }}
             />
           </div>
@@ -206,6 +210,18 @@ const ExpandedView: React.FC<ExpandedViewProps> = ({
                   className="w-32 h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer"
                 />
                 <span className="text-sm font-medium text-white w-16">{contrast.toFixed(1)}%</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-medium text-white">Exposure:</span>
+                <input
+                  type="range"
+                  min="-100"
+                  max="100"
+                  value={exposure}
+                  onChange={(e) => setExposure(Number(e.target.value))}
+                  className="w-32 h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer"
+                />
+                <span className="text-sm font-medium text-white w-16">{exposure.toFixed(1)}%</span>
               </div>
             </div>
             {/* Action Buttons */}
